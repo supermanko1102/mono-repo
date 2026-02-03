@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import TopNav from "./top-nav";
+import { cn } from "@/lib/utils";
 
 const serif = Fraunces({
   variable: "--font-serif",
@@ -26,11 +27,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-Hant">
-      <body className={`${serif.variable} ${sans.variable}`}>
+      <body className={cn("min-h-screen bg-background font-sans antialiased flex flex-col", serif.variable, sans.variable)}>
         <TopNav />
-        <main className="shell main">{children}</main>
-        <footer className="shell footer">
-          <div className="fineprint">此站為示範：API 由後端提供（Docker: Postgres + MinIO）。</div>
+        <main className="container mx-auto px-4 py-8 flex-1">{children}</main>
+        <footer className="border-t py-6 md:py-8">
+          <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+            此站為示範：API 由後端提供（Docker: Postgres + MinIO）。
+          </div>
         </footer>
       </body>
     </html>

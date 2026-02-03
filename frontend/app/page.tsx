@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -11,6 +13,11 @@ import {
 } from "@/app/lib/api";
 import type { Me, MentorSummary, Slot } from "@/app/lib/mentor-slots";
 import { formatSlot, sortSlots } from "@/app/lib/mentor-slots";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const [me, setMe] = useState<Me | null>(null);
@@ -92,136 +99,126 @@ export default function Page() {
   };
 
   return (
-    <section className="view" aria-labelledby="customer-title">
-      <div className="card">
-        <div className="card-head">
-          <h1 id="customer-title" className="h1">
-            vibe coder 預約導師
-          </h1>
-          <div className="muted">選導師、選時段、可上傳圖片（例如：錯誤截圖）</div>
-        </div>
-
-        {!me ? (
-          <div className="item">
-            <div className="item-main">
-              <div className="item-title">請先登入/註冊</div>
-              <div className="item-sub">
+    <div className="view space-y-8" aria-labelledby="customer-title">
+      <Card>
+        <CardHeader>
+          <CardTitle id="customer-title">vibe coder 預約導師</CardTitle>
+          <CardDescription>選導師、選時段、可上傳圖片（例如：錯誤截圖）</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!me && (
+            <div className="mb-6 p-4 rounded-md border bg-muted/20 text-center">
+              <p className="text-sm font-medium mb-2">請先登入/註冊</p>
+              <Button asChild variant="secondary" size="sm">
                 <Link href="/auth">前往登入/註冊</Link>
+              </Button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="space-y-2">
+              <Label>選擇導師</Label>
+              <Select
+                value={selectedMentorId}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setSelectedMentorId(next);
+                  if (!next) setSlots([]);
+                }}
+              >
+                <option value="">請選擇...</option>
+                {mentors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.displayName}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          <form className="space-y-6" autoComplete="on" onSubmit={onSubmit}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-2">
+                <Label>可預約時段</Label>
+                <Select name="slot" required disabled={sortedSlots.length === 0}>
+                  {sortedSlots.length === 0 ? (
+                    <option value="">（目前無可預約時段）</option>
+                  ) : (
+                    <>
+                      <option value="">請選擇...</option>
+                      {sortedSlots.map((slot) => {
+                        const { date, time } = formatSlot(slot.startAtIso);
+                        return (
+                          <option key={slot.id} value={slot.id}>
+                            {date} {time}
+                          </option>
+                        );
+                      })}
+                    </>
+                  )}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>問題描述 (選填)</Label>
+                <Input name="note" type="text" maxLength={500} placeholder="例如：vite build 失敗..." />
+              </div>
+              <div className="space-y-2">
+                <Label>圖片上傳 (選填)</Label>
+                <Input
+                  className="file:text-foreground"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setUploadFile(e.currentTarget.files?.[0] ?? null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>狀態</Label>
+                <Input
+                  value={me ? `${me.displayName}（${me.role === "VIBE_CODER" ? "vibe coder" : "導師"}）` : "未登入"}
+                  readOnly
+                  disabled
+                />
               </div>
             </div>
-          </div>
-        ) : null}
 
-        <div className="grid">
-          <label className="field">
-            <span className="label">選擇導師</span>
-            <select
-              value={selectedMentorId}
-              onChange={(e) => {
-                const next = e.target.value;
-                setSelectedMentorId(next);
-                if (!next) setSlots([]);
-              }}
-            >
-              <option value="">請選擇...</option>
-              {mentors.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.displayName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div />
-          <div />
-          <div />
-        </div>
-
-        <form className="form" autoComplete="on" onSubmit={onSubmit}>
-          <div className="grid">
-            <label className="field">
-              <span className="label">可預約時段</span>
-              <select name="slot" required disabled={sortedSlots.length === 0}>
-                {sortedSlots.length === 0 ? (
-                  <option value="">（目前無可預約時段）</option>
-                ) : (
-                  <>
-                    <option value="">請選擇...</option>
-                    {sortedSlots.map((slot) => {
-                      const { date, time } = formatSlot(slot.startAtIso);
-                      return (
-                        <option key={slot.id} value={slot.id}>
-                          {date} {time}
-                        </option>
-                      );
-                    })}
-                  </>
-                )}
-              </select>
-            </label>
-            <label className="field">
-              <span className="label">問題描述 (選填)</span>
-              <input name="note" type="text" maxLength={500} placeholder="例如：vite build 失敗、TS 類型錯誤..." />
-            </label>
-            <label className="field">
-              <span className="label">圖片上傳 (選填)</span>
-              <input
-                name="image"
-                type="file"
-                accept="image/*"
-                onChange={(e) => setUploadFile(e.currentTarget.files?.[0] ?? null)}
-              />
-            </label>
-            <label className="field">
-              <span className="label">狀態</span>
-              <input value={me ? `${me.displayName}（${me.role === "VIBE_CODER" ? "vibe coder" : "導師"}）` : "未登入"} readOnly />
-            </label>
-          </div>
-
-          <div className="actions">
-            <button className="btn btn-primary" type="submit">
-              送出預約
-            </button>
-            <div className="status" role="status" aria-live="polite">
-              {status}
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <section className="card" aria-labelledby="available-title">
-        <div className="card-head">
-          <h2 id="available-title" className="h2">
-            目前可預約時段
-          </h2>
-          <div className="muted">{sortedSlots.length} 個可預約時段</div>
-        </div>
-        <div className="list" role="list">
-          {sortedSlots.length === 0 ? (
-            <div className="item">
-              <div className="item-main">
-                <div className="item-title">目前沒有可預約時段</div>
-                <div className="item-sub">請稍後再試</div>
+            <div className="flex items-center gap-4">
+              <Button type="submit">送出預約</Button>
+              <div className="text-sm font-medium text-muted-foreground" role="status" aria-live="polite">
+                {status}
               </div>
             </div>
-          ) : (
-            sortedSlots.map((slot) => {
-              const { date, time } = formatSlot(slot.startAtIso);
-              return (
-                <div key={slot.id} className="item" role="listitem">
-                  <div className="item-main">
-                    <div className="item-title">
-                      {date} {time}
-                    </div>
-                    <div className="item-sub">
-                      {slot.note ? `備註：${slot.note}` : ""}
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card aria-labelledby="available-title">
+        <CardHeader>
+          <CardTitle id="available-title" className="text-lg">目前可預約時段</CardTitle>
+          <CardDescription>{sortedSlots.length} 個可預約時段</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3">
+            {sortedSlots.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                目前沒有可預約時段，請稍後再試
+              </div>
+            ) : (
+              sortedSlots.map((slot) => {
+                const { date, time } = formatSlot(slot.startAtIso);
+                return (
+                  <div key={slot.id} className="flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-accent/5 transition-colors">
+                    <div>
+                      <div className="font-semibold">{date} {time}</div>
+                      {slot.note && <div className="text-sm text-muted-foreground mt-1">{slot.note}</div>}
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
-    </section>
+                );
+              })
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
