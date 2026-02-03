@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  VIBE_CODER
+  MENTOR
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  CANCELLED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+
+  displayName  String
+  bio          String   @default("")
+  avatarPath   String?  // e.g. /uploads/...
+
+  mentorSlots  AvailabilitySlot[] @relation("MentorSlots")
+  bookingsAsUser   Booking[]      @relation("UserBookings")
+  bookingsAsMentor Booking[]      @relation("MentorBookings")
+  uploads      Upload[]
+  sessions     Session[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AvailabilitySlot {
+  id        String     @id @default(cuid())
+  mentorId  String
+  mentor    User       @relation("MentorSlots", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  startAt   DateTime
+  endAt     DateTime
+  status    SlotStatus @default(AVAILABLE)
+  note      String     @default("")
+
+  booking   Booking?
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([mentorId, startAt])
+}
+
+model Upload {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  path      String   // /uploads/<file>
+  mime      String
+  sizeBytes Int
+
+  booking   Booking? @relation("BookingUpload")
+
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  status    BookingStatus @default(CONFIRMED)
+
+  slotId    String        @unique
+  slot      AvailabilitySlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User          @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+
+  mentorId  String
+  mentor    User          @relation("MentorBookings", fields: [mentorId], references: [id], onDelete: Cascade)
+
+  note      String        @default("")
+  uploadId  String?       @unique
+  upload    Upload?       @relation("BookingUpload", fields: [uploadId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([mentorId, createdAt])
+}
