@@ -1,0 +1,91 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123456
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - |
+        mc alias set local http://minio:9000 minio minio123456
+        mc mb -p local/uploads || true
+        mc anonymous set download local/uploads
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - db
+      - minio-init
+    environment:
+      PORT: "4000"
+      DATABASE_URL: "postgresql://app:app@db:5432/app?schema=public"
+      SESSION_SECRET: "dev-secret-change-me"
+      CORS_ORIGIN: "http://localhost:3000"
+
+      S3_ENDPOINT: "http://minio:9000"
+      S3_REGION: "us-east-1"
+      S3_ACCESS_KEY: "minio"
+      S3_SECRET_KEY: "minio123456"
+      S3_BUCKET: "uploads"
+      S3_PUBLIC_BASE_URL: "http://localhost:9000"
+      S3_FORCE_PATH_STYLE: "true"
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        pnpm -C backend prisma:generate
+        pnpm -C backend prisma:push -- --accept-data-loss
+        pnpm -C backend start:dev
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      - backend
+    environment:
+      BACKEND_URL: "http://backend:4000"
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        pnpm -C frontend dev -- -p 3000 -H 0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
+  miniodata:

@@ -1,4 +1,4 @@
-# Backend Plan (Local First)
+# Backend Plan (Nest + Postgres + MinIO)
 
 ## Goals
 
@@ -6,14 +6,15 @@
 - Mentor 建立可預約時段
 - vibe coder 瀏覽導師、選時段下單預約
 - 圖片上傳（例如：錯誤截圖），可在訂單中查看
-- 先能完整本地跑：SQLite + 本地檔案存放
+- 先能完整本地跑：Docker 起 Postgres + MinIO
 
 ## Current Architecture (This Repo)
 
-- App: Next.js App Router
-- DB: Prisma + SQLite (`dev.db`)
+- Frontend: Next.js（`frontend/`）
+- Backend: NestJS（`backend/`）
+- DB: Prisma + Postgres（Docker: `db` service）
 - Auth: email/password + httpOnly session cookie + Session table
-- Uploads: 寫入 `public/uploads/`，DB 存 `/uploads/<file>` 路徑
+- Uploads: MinIO（S3 相容；Docker: `minio` service），DB 存 upload url/key
 
 ## Data Model
 
@@ -42,8 +43,8 @@
 
 ## Production Upgrade Path (Plan Only)
 
-- DB: SQLite -> Postgres
-- Uploads: `public/uploads` -> S3/R2 (signed upload + CDN)
+- DB: Postgres（保留）
+- Uploads: MinIO -> S3/R2 (signed upload + CDN)
 - Auth: 同樣 cookie session，但 Session store 改用 Redis/DB；增加 password reset
 - Observability: request logging + error tracking
 - Rate limit: login/upload endpoints

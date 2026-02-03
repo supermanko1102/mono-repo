@@ -1,33 +1,35 @@
-MentorSlots: vibe coder (用戶) 預約專業工程師 (導師) 的本地可跑示範站。
+MentorSlots: vibe coder (用戶) 預約專業工程師 (導師) 的本地可跑預約站（monorepo）。
 
-## Local Run
+## Structure
+
+- `frontend/`: Next.js (UI)
+- `backend/`: NestJS (API)
+
+## Local Run (No Docker)
+
+需要本機有 Postgres + S3 相容儲存（或用 Docker 跑下面那組）。
 
 1) 安裝依賴
 
 ```bash
-npm install
+pnpm install
 ```
 
-2) 初始化資料庫 (SQLite)
+2) 啟動（兩個終端或用 root script）
 
 ```bash
-npx prisma migrate dev
+pnpm dev
 ```
 
-3) 啟動
+- Frontend: http://localhost:3000/
+- Mentor: http://localhost:3000/mentor
+- Auth: http://localhost:3000/auth
+
+## Local Run (Docker)
 
 ```bash
-npm run dev
+docker compose up --build
 ```
-
-- 客戶端 (vibe coder): http://localhost:3000/
-- 導師端: http://localhost:3000/mentor
-- 登入/註冊: http://localhost:3000/auth
-
-## Storage
-
-- SQLite DB: `dev.db`
-- 上傳圖片: `public/uploads/`（瀏覽路徑 `/uploads/...`）
 
 ## Backend Plan
 
